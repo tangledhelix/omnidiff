@@ -73,10 +73,10 @@ wildcards or grouping patterns, as in these examples.
 Omnidiff automatically ignores certain files such as Emacs and Vim swap/backup
 files, and RCS/CVS archive files.
 
-    *~ *,v #* .*.swp
+    *~  *,v  #*  .*.swp
 
 Lastly, globbing ignores directories, because we can't diff them. Or at least,
-omnidiff doesn't now how to diff a directory. This automatically excludes some
+omnidiff doesn't know how to diff a directory. This automatically excludes some
 things we don't need, such as `RCS/`, `CVS/`, `.svn/`, and `.git/`.
 
 # Defining filters
