@@ -13,6 +13,11 @@ run-time by passing it as an argument, e.g.
 
 At least Perl 5.6, and the `Text::Diff` module.
 
+# License
+
+This software is released under the Simplified BSD License. See the `LICENSE`
+file for the full text.
+
 # Installing Omnidiff
 
 Generally you want something like this:
