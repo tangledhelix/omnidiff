@@ -9,7 +9,7 @@ run-time by passing it as an argument, e.g.
 
     omnidiff /usr/local/etc/omnidiff.conf
 
-https://github.com/tangledhelix/omnidiff
+Get Omnidiff at: https://github.com/tangledhelix/omnidiff
 
 # Requirements
 
