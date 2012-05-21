@@ -9,6 +9,8 @@ run-time by passing it as an argument, e.g.
 
     omnidiff /usr/local/etc/omnidiff.conf
 
+https://github.com/tangledhelix/omnidiff
+
 # Requirements
 
 At least Perl 5.6, and the `Text::Diff` module.
