@@ -1,0 +1,87 @@
+# omnidiff.conf - configuration for omnidiff
+
+#cache_dir /var/cache/omnidiff
+
+#email_from sender@domain.com
+#email_to recipient@domain.com
+#email_subject [omnidiff] %d file(s) changed
+#email_program /usr/sbin/sendmail
+
+# Below are some examples of things you could watch. A few filters are shown to
+# demonstrate the filtering capability. A filter applies to the most recently
+# seen file definition.
+
+# Watch omnidiff's config file for changes. So meta!
+#file /etc/omnidiff.conf
+
+#file /etc/passwd
+#file /etc/group
+
+# Filters out 2nd field (encrypted password) on common Unixes
+#file /etc/shadow
+#filter s/^([^:]+):[^:]+:/$1:******:/gm
+
+#file /etc/sudoers
+
+#files /var/spool/cron/*
+
+#file /etc/hosts
+#file /etc/netmasks
+#file /etc/services
+
+#file /etc/hosts.allow
+#file /etc/hosts.deny
+
+#file /etc/xinetd.conf
+#files /etc/xinetd.d/*
+
+#file /etc/resolv.conf
+
+#file /etc/rsyslog.conf
+#file /etc/logrotate.conf
+#files /etc/logrotate.d/*
+
+# Example of a complex regex filter. This filters login/enable password out of
+# a RANCID .cloginrc file.
+#file /etc/cloginrc
+#filter s/(add\s+password\s+\S+\s+\{)[^}]+(})((\s+{)[^}]+(}))?/$3 ? "$1******$2$4******$5" : "$1******$2"/gme
+
+#file /etc/named.conf
+#files /etc/named/*
+
+# Running your own certificate authority? Watch index.txt to see what's been
+# issued and revoked. Watch the local OpenSSL config too.
+#file /usr/local/etc/cert_authority/CA/index.txt
+#file /usr/local/etc/cert_authority/CA/openssl.cnf
+
+#file /etc/aliases
+#files /etc/postfix/*.cf
+
+# OpenLDAP: Filter root user and replication user passwords
+#file /etc/openldap/slapd.conf
+#filter s/^(\s*)((rootpw)(\s+).*|(credentials=['"])[^'"]+(['"]))(\s*)$/$3 eq 'rootpw' ? "$1$3$4********$7" : "$1$5******$6$7"/gme
+
+#file /etc/freshclam.conf
+
+#file /etc/mailman/mm_cfg.py
+
+#file /etc/dhcp/dhcpd.conf
+#file /etc/dhcp/dhcpd6.conf
+
+#files /etc/httpd/conf/*
+#files /etc/httpd/conf.d/*.conf
+#file /etc/php.ini
+#files /etc/php.d/*.ini
+
+# Filter out passwords from .htpasswd files
+#file /etc/httpd/conf.d/.htpasswd
+#filter s/^(\s*[^\s:]+:).*/$1...../gm
+
+#file /etc/my.cnf
+#file /usr/share/pgsql/postgresql.conf
+#file /usr/share/pgsql/pg_hba.conf
+#file /usr/share/pgsql/pg_ident.conf
+
+#file /etc/ssh/ssh_config
+#file /etc/ssh/sshd_config
+

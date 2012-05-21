@@ -1,0 +1,43 @@
+#!/usr/bin/perl
+#
+# Test filters before committing to omnidiff.conf.
+# Run with no arguments for help.
+
+use strict;
+use warnings;
+
+use Text::Diff;
+
+usage() if $#ARGV < 1;
+
+open my $fh, $ARGV[0] or die "Can't read $ARGV[0]";
+
+my $text;
+$text .= $_ while <$fh>;
+eval "\$text =~ $ARGV[1]";
+print $text;
+
+sub usage {
+
+    print <<_EOF_;
+
+Usage: $0 <file> <filter>
+
+file   - File used as input
+filter - A regex filter to test against <file>
+
+It is best to surround the filter with single quotes to avoid variable
+interpolation by the shell. Here is an example that strips the password field
+from /etc/shadow on common Unixes:
+
+$0 /etc/shadow 's/^([^:]+):[^:]+:/\$1:******:/gm'
+
+Any Perl regular expression should work. See perlre(1) and perlreref(1) for
+more information.
+
+_EOF_
+
+    exit;
+
+}
+

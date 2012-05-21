@@ -1,0 +1,301 @@
+#!/usr/bin/perl
+#
+# Track changes to files and email me.
+#
+# https://github.com/tangledhelix/omnidiff
+
+use strict;
+use warnings;
+
+use File::Basename;
+use File::Glob qw(:glob);
+use File::Path;
+use Text::Diff;
+
+# Default settings
+my %DEFAULTS = (
+    config_file   => "/etc/omnidiff.conf",
+    cache_dir     => "/var/cache/omnidiff",
+    email_from    => "root",
+    email_to      => "root",
+    email_subject => "[omnidiff] %d file(s) changed",
+    email_program => "/usr/sbin/sendmail",
+);
+
+print_help() if $#ARGV >= 0 and ($ARGV[0] eq "-h" or $ARGV[0] eq "--help");
+
+my $cfg_file = ($ARGV[0] or $DEFAULTS{"config_file"});
+
+my $config = {};
+my $map    = {};
+read_config($cfg_file, $config, $map);
+
+# Track new and changed files
+my $new_files     = [];
+my $changed_files = [];
+
+# Queue output for later
+my $output;
+
+unless (-d $config->{"cache_dir"}) {
+    File::Path::make_path($config->{"cache_dir"});
+}
+
+# We don't know what's in there. Make sure it isn't globally accessible.
+chmod(0700, $config->{"cache_dir"});
+
+for my $file (sort keys %{$map}) {
+    unless (-r $file) {
+        print "\n\n*** ERROR: file not found: $file\n\n";
+        next;
+    }
+
+    my $cache_file = cache_filename($file);
+
+    my ($filter, $prev_gen);
+
+    if (-f $cache_file) {
+
+        # Check for the presence of a filter.  Filters are usually used
+        # to mask passwords in diff output, since they travel via email.
+        if ($map->{$file}->{"filter"}) {
+            $filter = $map->{$file}->{"filter"};
+        }
+        $prev_gen = $cache_file;
+
+    } else {
+
+        # If the cache file doesn't exist, assume there was no
+        # previous run (this is our first time out). Diff against
+        # /dev/null so we see the new file.
+        copy_file($file, $cache_file);
+        $prev_gen = "/dev/null";
+        push @{$new_files}, $file;
+    }
+
+    # Do the diff. If a difference is detected, copy the cache file
+    # to a backup cache file, then copy the production file to the
+    # cache file. We never touch the production file except to read!
+
+    my $diff_output = do_diff($prev_gen, $file, "$cache_file.diff", $filter);
+
+    if ($diff_output) {
+        copy_file($cache_file, "$cache_file.old");
+        copy_file($file, $cache_file);
+
+        $output .= $diff_output;
+
+        # Track the file in a list unless it was new
+        unless ($prev_gen eq "/dev/null") {
+            push @{$changed_files}, $file;
+        }
+    }
+
+}
+
+# Only send an email if there were changes.
+if ($output) {
+    send_message($output, $changed_files, $new_files);
+}
+
+sub read_config {
+    my ($cfg_file, $config, $map) = @_;
+    my $curr_file;
+
+    open my $fh, $cfg_file or die "Unable to open $cfg_file";
+
+    while (<$fh>) {
+        # skip blank lines and comments
+        next if /^\s*$/ or /^\s*#/;
+
+        # trim whitespace
+        s/^\s+//;
+        s/\s+$//;
+
+        if (/^file\s+/) {
+            s/^file\s+//;
+            $curr_file = $_;
+            $map->{$curr_file}->{"flag"} = 1;
+        }
+
+        if (/^files\s+/) {
+            s/^files\s+//;
+            foreach my $file (bsd_glob($_)) {
+                my $basename = basename($file);
+
+                # Skip file types we don't want to see
+                next if $basename =~ /,v$/;             # RCS/CVS archive file
+                next if $basename =~ /~$/;              # Emacs backup file
+                next if $basename =~ /^#/;              # Emacs swap file
+                next if $basename =~ /^\..*\.swp$/;     # Vim swap files
+
+                # Skip directories
+                next if -d $file;
+
+                $map->{$file}->{"flag"} = 1;
+            }
+        }
+
+        if (/^filter\s+/) {
+            s/^filter\s+//;
+            $map->{$curr_file}->{"filter"} = $_;
+        }
+
+        if (/^cache_dir\s+/) {
+            s/^cache_dir\s+//;
+            $config->{"cache_dir"} = $_;
+        }
+
+        if (/^email_from\s+/) {
+            s/^email_from\s+//;
+            $config->{"email_from"} = $_;
+        }
+
+        if (/^email_to\s+/) {
+            s/^email_to\s+//;
+            $config->{"email_to"} = $_;
+        }
+
+        if (/^email_subject\s+/) {
+            s/^email_subject\s+//;
+            $config->{"email_subject"} = $_;
+        }
+
+        if (/^email_program\s+/) {
+            s/^email_program\s+//;
+            $config->{"email_program"} = $_;
+        }
+
+    }
+
+    # Set defaults here if not already set
+    for my $param qw(cache_dir email_to email_from email_subject email_program) {
+        unless (defined $config->{$param}) {
+            $config->{$param} = $DEFAULTS{$param};
+        }
+    }
+
+    return 1;
+}
+
+# Translate filename into cache filename
+sub cache_filename {
+    my $filename = shift;
+
+    # strip leading slash, translate / to ::
+    $filename =~ s{^/}{};
+    $filename =~ s{/}{::}g;
+
+    $filename = $config->{"cache_dir"} . "/$filename";
+
+    return $filename;
+}
+
+# Print help message and exit
+sub print_help {
+    print "Usage: $0 [<config_file>]\n";
+    print "\n";
+    print "config_file defaults to " . $DEFAULTS{"config_file"} . "\n";
+
+    exit;
+}
+
+# Do a file copy
+sub copy_file {
+    my ($src, $dst) = @_;
+
+    open my $fhr, $src or die "Can't read $src";
+    open my $fhw, "> $dst" or die "Can't write $dst";
+
+    print $fhw $_ while <$fhr>;
+}
+
+# Do a file diff
+sub do_diff {
+    my ($cache_file, $file, $diff_file, $filter) = @_;
+    my $output;
+
+    my $raw_diff = diff($cache_file, $file);
+
+    if ($raw_diff) {
+        # Store in a file for posterity
+        {
+            open my $fh, "> $diff_file" or die "Can't write $diff_file";
+            print $fh $raw_diff;
+        }
+
+        my $diff = $raw_diff;
+
+        if ($filter) {
+            eval "\$diff =~ $filter";
+        }
+
+        $output = <<EOF;
+
+=============================================================
+FILE: $file
+
+$diff
+
+EOF
+
+    }
+
+    return 0 unless $raw_diff;
+
+    return $output;
+}
+
+# Send an email
+sub send_message {
+    my ($output, $changed_files, $new_files) = @_;
+
+    my $changed_count = 0;
+    my $new_count     = 0;
+
+    # How many files were changed
+    if (@{$changed_files}[0]) {
+        $changed_count = $#{$changed_files} + 1;
+    }
+
+    # How many files are new
+    if (@{$new_files}[0]) {
+        $new_count = $#{$new_files} + 1;
+    }
+
+    # Stick number of changed files into subject header
+    my $subject = $config->{"email_subject"};
+    my $total_count = $changed_count + $new_count;
+    $subject =~ s/%d/$total_count/;
+
+    # Format an indented list of filenames that were changed
+    my $changed_list;
+    for my $file (@{$changed_files}) {
+        $changed_list .= "    $file\n";
+    }
+    my $new_list;
+    for my $file (@{$new_files}) {
+        $new_list .= "    $file\n";
+    }
+
+    my $sendmail = $config->{"email_program"};
+    open my $mh, "| $sendmail -t" or die "Can't open $sendmail!\n";
+
+    print $mh "From: " . $config->{"email_from"} . "\n";
+    print $mh "To: " . $config->{"email_to"} . "\n";
+    print $mh "Subject: $subject\n";
+
+    if ($new_list) {
+        print $mh "Detected new files:\n\n";
+        print $mh "$new_list\n\n";
+    }
+
+    if ($changed_list) {
+        print $mh "Detected changes in the following files:\n\n";
+        print $mh "$changed_list\n\n";
+    }
+
+    print $mh "$output\n";
+
+}
+
