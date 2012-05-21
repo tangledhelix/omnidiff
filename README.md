@@ -26,6 +26,9 @@ Then edit `/etc/omnidiff.conf` to your liking.
 
 If upgrading, make sure you don't overwrite your existing `omnidiff.conf`.
 
+If you don't have root access, see below for installing as an
+unprivileged user.
+
 # Email parameters
 
 By default, email will be sent from `root` to `root`. You can change those
@@ -151,4 +154,22 @@ time intervals. That's easy too.
     */5 * * * * /usr/bin/omnidiff /etc/omnidiff-critical.conf
     0   * * * * /usr/bin/omnidiff /etc/omnidiff-hourly.conf
     0   0 * * * /usr/bin/omnidiff /etc/omnidiff-daily.conf
+
+# Running as an unprivileged user
+
+The examples above tend to assume you are a sysadmin running this script as
+root, but you can just as easily run all of this out of your home directory
+on a shared web host or similar.
+
+    cd && git clone https://github.com/tangledhelix/omnidiff.git
+
+Edit `$HOME/omnidiff/etc/omnidiff` to have...
+
+    cache_dir /home/jdoe/omnidiff/cache
+    email_from me@mydomain.com
+    email_to me@mydomain.com
+
+Run in your personal crontab:
+
+    */5 * * * * /home/jdoe/omnidiff/bin/omnidiff /home/jdoe/omnidiff/etc/omnidiff.conf
 
