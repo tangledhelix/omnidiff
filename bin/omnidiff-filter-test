@@ -19,7 +19,7 @@ print $text;
 
 sub usage {
 
-    print <<_EOF_;
+  print <<_EOF_;
 
 Usage: $0 <file> <filter>
 
@@ -37,7 +37,7 @@ more information.
 
 _EOF_
 
-    exit;
+  exit;
 
 }
 
