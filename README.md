@@ -7,7 +7,9 @@ Only files that Omnidiff knows about will be monitored. The configuration file
 defaults to `/etc/omnidiff.conf`, but you can specify an alternate path at
 run-time by passing it as an argument, e.g.
 
-    omnidiff /usr/local/etc/omnidiff.conf
+```
+omnidiff /usr/local/etc/omnidiff.conf
+```
 
 Get Omnidiff at: https://github.com/tangledhelix/omnidiff
 
@@ -24,10 +26,12 @@ file for the full text.
 
 Generally you want something like this:
 
-    cd && git clone https://github.com/tangledhelix/omnidiff.git
-    cd ~/omnidiff
-    cp bin/omnidiff* /usr/bin
-    cp etc/omnidiff.conf.sample /etc/omnidiff.conf
+```
+cd && git clone https://github.com/tangledhelix/omnidiff.git
+cd ~/omnidiff
+cp bin/omnidiff* /usr/bin
+cp etc/omnidiff.conf.sample /etc/omnidiff.conf
+```
 
 Then edit `/etc/omnidiff.conf` to your liking.
 
@@ -49,41 +53,49 @@ You can customize the subject by setting `email_subject` in the config file.
 If you insert the token `%d`, it will be replaced by the number of files which
 this email shows changes for. The default subject line is:
 
-    [omnidiff] %d file(s) changed
+```
+[omnidiff] %d file(s) changed
+```
 
 # Defining individual files to watch
 
 Any line starting with the word `file` defines a file to watch for changes.
 This *must* be a fully qualified path.
 
-    file /etc/passwd
-    file /etc/group
+```
+file /etc/passwd
+file /etc/group
+```
 
 # Defining files using file globbing
 
 Any line starting with the word `files` defines a glob pattern. You can use
 wildcards or grouping patterns, as in these examples.
 
-    # Match all files in a directory
-    files /path/to/dir/*
-    
-    # Match all *.cfg files
-    files /path/to/dir/*.cfg
-    
-    # Match *.c and *.h files
-    files /path/to/dir/*.[ch]
-    
-    # Match *.cfg and *.ini files
-    files /path/to/dir/*.{cfg,ini}
-    
-    # Match one character position with '?'
-    # This would match dns21, dns22, dns23, ...
-    files /path/to/dir/dns2?.conf
+```
+# Match all files in a directory
+files /path/to/dir/*
+
+# Match all *.cfg files
+files /path/to/dir/*.cfg
+
+# Match *.c and *.h files
+files /path/to/dir/*.[ch]
+
+# Match *.cfg and *.ini files
+files /path/to/dir/*.{cfg,ini}
+
+# Match one character position with '?'
+# This would match dns21, dns22, dns23, ...
+files /path/to/dir/dns2?.conf
+```
 
 Omnidiff automatically ignores certain files such as Emacs and Vim swap/backup
 files, and RCS/CVS archive files.
 
-    *~  *,v  #*  .*.swp
+```
+*~  *,v  #*  .*.swp
+```
 
 Lastly, globbing ignores directories, because we can't diff them. Or at least,
 omnidiff doesn't know how to diff a directory. This automatically excludes some
@@ -102,8 +114,10 @@ Filters can use any valid Perl regex syntax. See [perlre(1)][perlre] and
 [perlre]: http://perldoc.perl.org/perlre.html
 [perlreref]: http://perldoc.perl.org/perlreref.html
 
-    file /etc/shadow
-    filter s/^([^:]+):[^:]+:/$1:******:/gm
+```
+file /etc/shadow
+filter s/^([^:]+):[^:]+:/$1:******:/gm
+```
 
 The above example will watch the shadow file, but filter out the encrypted
 password before sending the email.
@@ -153,14 +167,18 @@ Most likely you will want to run Omnidiff via cron so it can watch files for
 you. Assuming you are using the default config file path, all you need to do
 is call omnidiff.
 
-    */5 * * * * /usr/bin/omnidiff
+```
+*/5 * * * * /usr/bin/omnidiff
+```
 
 It could be you want mutiple config files to watch things at different
 time intervals. That's easy too.
 
-    */5 * * * * /usr/bin/omnidiff /etc/omnidiff-critical.conf
-    0   * * * * /usr/bin/omnidiff /etc/omnidiff-hourly.conf
-    0   0 * * * /usr/bin/omnidiff /etc/omnidiff-daily.conf
+```
+*/5 * * * * /usr/bin/omnidiff /etc/omnidiff-critical.conf
+0   * * * * /usr/bin/omnidiff /etc/omnidiff-hourly.conf
+0   0 * * * /usr/bin/omnidiff /etc/omnidiff-daily.conf
+```
 
 # Running as an unprivileged user
 
@@ -168,15 +186,21 @@ The examples above tend to assume you are a sysadmin running this script as
 root, but you can just as easily run all of this out of your home directory
 on a shared web host or similar.
 
-    cd && git clone https://github.com/tangledhelix/omnidiff.git
+```
+cd && git clone https://github.com/tangledhelix/omnidiff.git
+```
 
 Edit `$HOME/omnidiff/etc/omnidiff` to have...
 
-    cache_dir /home/jdoe/omnidiff/cache
-    email_from me@mydomain.com
-    email_to me@mydomain.com
+```
+cache_dir /home/jdoe/omnidiff/cache
+email_from me@mydomain.com
+email_to me@mydomain.com
+```
 
 Run in your personal crontab:
 
-    */5 * * * * /home/jdoe/omnidiff/bin/omnidiff /home/jdoe/omnidiff/etc/omnidiff.conf
+```
+*/5 * * * * /home/jdoe/omnidiff/bin/omnidiff /home/jdoe/omnidiff/etc/omnidiff.conf
+```
 
